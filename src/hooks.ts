@@ -164,6 +164,13 @@ export function useCheckout() {
         mac,
       });
 
+      // 3. Liên kết đơn hàng với giao dịch
+      await requestWithPost("/link", {
+        orderId: myOrderId,
+        checkoutSdkOrderId,
+        miniAppId: window.APP_ID,
+      });
+
       setCart([]);
       refreshNewOrders();
       navigate("/orders", {

@@ -93,6 +93,17 @@ express()
       .digest("hex");
     res.json({ mac });
   })
+  .post("/link", async (req, res) => {
+    const { orderId, checkoutSdkOrderId, miniAppId } = req.body;
+    const order = db.data.orders.find((order) => order.id === orderId);
+    if (!order) {
+      res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    } else {
+      order.checkoutSdkOrderId = checkoutSdkOrderId;
+      db.write();
+      res.json({ message: "Đã liên kết đơn hàng thành công!" });
+    }
+  })
   .listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
