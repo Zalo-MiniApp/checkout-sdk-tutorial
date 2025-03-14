@@ -10,7 +10,7 @@ import {
 } from "@/state";
 import { CreateOrderReponse, CreateOrderRequest, Product } from "@/types";
 import { getConfig } from "@/utils/template";
-import { authorize, createOrder, openChat } from "zmp-sdk";
+import { authorize, createOrder, openChat, EventName, events } from "zmp-sdk";
 import { useAtomCallback } from "jotai/utils";
 import { requestWithPost } from "./utils/request";
 
@@ -168,14 +168,22 @@ export function useCheckout() {
         miniAppId: window.APP_ID,
       });
 
-      setCart([]);
-      navigate("/orders", {
-        viewTransition: true,
+      const callback = () => {
+        setCart([]);
+        navigate("/orders", {
+          viewTransition: true,
+        });
+        toast.success("Thanh toán thành công. Cảm ơn bạn đã mua hàng!", {
+          icon: "🎉",
+          duration: 5000,
+        });
+      };
+      events.once(EventName.OpenApp, (data) => {
+        if (data?.path?.startsWith("/orders")) {
+          callback();
+        }
       });
-      toast.success("Thanh toán thành công. Cảm ơn bạn đã mua hàng!", {
-        icon: "🎉",
-        duration: 5000,
-      });
+      events.once(EventName.PaymentClose, callback);
     } catch (error) {
       console.warn(error);
       toast.error(
