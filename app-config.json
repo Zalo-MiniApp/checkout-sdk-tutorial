@@ -14,7 +14,7 @@
   "listAsyncJS": [],
   "template": {
     "name": "zaui-market",
-    "apiUrl": "",
+    "apiUrl": "https://checkout-sdk-tutorial.onrender.com",
     "oaIDtoOpenChat": "4318657068771012646",
     "logoUrl": "https://photo-logo-mapps.zadn.vn/284fadf20bb7e2e9bba6.jpg",
     "shopName": "Tiệm Tí Hon",
