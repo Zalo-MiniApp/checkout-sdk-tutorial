@@ -17,14 +17,20 @@
   "scripts": {
     "start": "zmp start",
     "deploy": "zmp deploy",
-    "build:css": "postcss src/css/tailwind.css -o src/css/styles.css"
+    "build:css": "postcss src/css/tailwind.css -o src/css/styles.css",
+    "backend": "tsx src/backend.ts"
   },
   "dependencies": {
     "@react-spring/web": "^9.7.4",
     "@use-gesture/react": "^10.3.1",
+    "axios": "^1.8.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "embla-carousel-autoplay": "^8.3.0",
     "embla-carousel-react": "^8.3.0",
+    "express": "^4.21.2",
     "jotai": "^2.10.0",
+    "lowdb": "^7.0.1",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -34,6 +40,8 @@
     "zmp-ui": "^1.11.6"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.8.2",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
@@ -45,6 +53,7 @@
     "postcss-preset-env": "^6.7.0",
     "sass": "^1.76.0",
     "tailwindcss": "^3.4.3",
+    "tsx": "^4.19.3",
     "vite": "^5.2.13",
     "zmp-vite-plugin": "^1.1.6"
   }
