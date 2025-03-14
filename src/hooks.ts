@@ -132,6 +132,38 @@ export function useCheckout() {
         total: totalAmount,
       });
 
+      // Chuẩn bị params để tạo MAC
+      const amount = totalAmount;
+      const desc = `Thanh toán cho đơn hàng #${myOrderId}`;
+      const item = cart.map<{ id: number; amount: number }>((cartItem) => ({
+        id: cartItem.product.id,
+        amount: cartItem.product.price * cartItem.quantity,
+      }));
+      const extradata = JSON.stringify({
+        myOrderId, // truyền theo định danh của đơn hàng đã được tạo ở phía hệ thống của bạn
+      });
+      const method = JSON.stringify({
+        id: "ZALOPAY_SANDBOX", // Phương thức thanh toán
+        isCustom: false, // false: Phương thức thanh toán của Platform, true: Phương thức thanh toán riêng của đối tác
+      });
+
+      // Gọi đến backend để tạo `MAC`
+      const payload = { amount, desc, item, extradata, method };
+      const { mac } = await requestWithPost<typeof payload, { mac: string }>(
+        "/mac",
+        payload
+      );
+
+      // 2. Kích hoạt giao dịch thanh toán
+      const { orderId: checkoutSdkOrderId } = await createOrder({
+        desc,
+        item,
+        amount: totalAmount,
+        extradata,
+        method,
+        mac,
+      });
+
       setCart([]);
       refreshNewOrders();
       navigate("/orders", {

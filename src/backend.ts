@@ -4,6 +4,7 @@ import { config } from "dotenv";
 import { LowSync } from "lowdb";
 import { JSONFileSync } from "lowdb/node";
 import { CreateOrderRequest, Order as OrderInfo } from "./types";
+import { createHmac } from "crypto";
 
 interface Order {
   id: number;
@@ -72,6 +73,25 @@ express()
       message: "Đã tạo đơn hàng thành công!",
       orderId: order.id,
     });
+  })
+  .post("/mac", async (req, res) => {
+    const { amount, desc, item, extradata, method } = req.body;
+    const params = { amount, desc, item, extradata, method };
+    const dataMac = Object.keys(params)
+      .sort()
+      .map(
+        (key) =>
+          `${key}=${
+            typeof params[key] === "object"
+              ? JSON.stringify(params[key])
+              : params[key]
+          }`
+      )
+      .join("&");
+    const mac = createHmac("sha256", process.env.CHECKOUT_SDK_PRIVATE_KEY!)
+      .update(dataMac)
+      .digest("hex");
+    res.json({ mac });
   })
   .listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
