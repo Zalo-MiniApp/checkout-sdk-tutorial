@@ -11,7 +11,14 @@ import {
 } from "@/state";
 import { CreateOrderReponse, CreateOrderRequest, Product } from "@/types";
 import { getConfig } from "@/utils/template";
-import { authorize, createOrder, openChat } from "zmp-sdk/apis";
+import {
+  authorize,
+  createOrder,
+  openChat,
+  events,
+  EventName,
+  checkTransaction,
+} from "zmp-sdk/apis";
 import { useAtomCallback } from "jotai/utils";
 import { requestWithPost } from "./utils/request";
 
@@ -171,15 +178,42 @@ export function useCheckout() {
         miniAppId: window.APP_ID,
       });
 
-      setCart([]);
-      refreshNewOrders();
-      navigate("/orders", {
-        viewTransition: true,
+      // 5. Thông báo kết quả giao dịch
+      const callback = async () => {
+        const { resultCode, msg } = await checkTransaction({
+          data: {
+            zmpOrderId: checkoutSdkOrderId,
+          },
+        });
+        switch (resultCode) {
+          case 1:
+            toast.success("Thanh toán thành công. Cảm ơn bạn đã mua hàng!", {
+              icon: "🎉",
+              duration: 5000,
+            });
+            break;
+
+          case 0:
+            toast.success("Giao dịch đang xử lý. Cảm ơn bạn đã mua hàng!", {
+              icon: "⏳",
+              duration: 5000,
+            });
+            break;
+          default:
+            throw new Error(msg);
+        }
+        setCart([]);
+        refreshNewOrders();
+        navigate("/orders", {
+          viewTransition: true,
+        });
+      };
+      events.once(EventName.OpenApp, (data) => {
+        if (data?.path?.startsWith("/orders")) {
+          callback();
+        }
       });
-      toast.success("Thanh toán thành công. Cảm ơn bạn đã mua hàng!", {
-        icon: "🎉",
-        duration: 5000,
-      });
+      events.once(EventName.PaymentClose, callback);
     } catch (error) {
       console.warn(error);
       toast.error(
