@@ -5,6 +5,7 @@ import { LowSync } from "lowdb";
 import { JSONFileSync } from "lowdb/node";
 import { CreateOrderRequest, Order as OrderInfo } from "./types";
 import { createHmac } from "crypto";
+import axios from "axios";
 
 interface Order {
   id: number;
@@ -101,6 +102,34 @@ express()
     } else {
       order.checkoutSdkOrderId = checkoutSdkOrderId;
       db.write();
+      setTimeout(async () => {
+        if (order.info.paymentStatus === "pending") {
+          const dataMac = `appId=${miniAppId}&orderId=${checkoutSdkOrderId}&privateKey=${process.env.CHECKOUT_SDK_PRIVATE_KEY}`;
+          const mac = createHmac(
+            "sha256",
+            process.env.CHECKOUT_SDK_PRIVATE_KEY!
+          )
+            .update(dataMac)
+            .digest("hex");
+          const {
+            data: { data },
+          } = await axios<{ data: { returnCode: 0 | 1 | -1 } }>(
+            "https://payment-mini.zalo.me/api/transaction/get-status",
+            {
+              params: {
+                orderId: checkoutSdkOrderId,
+                appId: miniAppId,
+                mac,
+              },
+            }
+          );
+          if (data.returnCode) {
+            order.info.paymentStatus =
+              data.returnCode === 1 ? "success" : "failed";
+            db.write();
+          }
+        }
+      }, 20 * 60 * 1000);
       res.json({ message: "Đã liên kết đơn hàng thành công!" });
     }
   })
