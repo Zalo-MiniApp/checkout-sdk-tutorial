@@ -104,6 +104,46 @@ express()
       res.json({ message: "Đã liên kết đơn hàng thành công!" });
     }
   })
+  .post("/callback", async (req, res) => {
+    try {
+      const { data, overallMac } = req.body;
+      const { orderId, resultCode, extradata } = data;
+      // Tạo MAC
+      const dataOverallMac = Object.keys(data)
+        .sort()
+        .map((key) => `${key}=${data[key]}`)
+        .join("&");
+      const validOverallMac = createHmac(
+        "sha256",
+        process.env.CHECKOUT_SDK_PRIVATE_KEY!
+      )
+        .update(dataOverallMac)
+        .digest("hex");
+      if (overallMac === validOverallMac) {
+        // Lưu ý 1. Cách lấy `myOrderId`
+        const { myOrderId } = JSON.parse(decodeURIComponent(extradata));
+        const order = db.data.orders.find((order) => order.id === myOrderId);
+        if (order) {
+          order.info.paymentStatus = resultCode === 1 ? "success" : "failed";
+          db.write();
+          // Lưu ý 2. Cách trả về kết quả
+          res.json({
+            returnCode: 1,
+            returnMessage: "Đã cập nhật trạng thái đơn hàng thành công!",
+          });
+        } else {
+          throw Error("Không tìm thấy đơn hàng");
+        }
+      } else {
+        throw Error("MAC không hợp lệ");
+      }
+    } catch (error) {
+      res.json({
+        returnCode: 0,
+        returnMessage: String(error),
+      });
+    }
+  })
   .listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
