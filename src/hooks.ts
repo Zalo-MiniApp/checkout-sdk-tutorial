@@ -11,7 +11,14 @@ import {
 } from "@/state";
 import { CreateOrderReponse, CreateOrderRequest, Product } from "@/types";
 import { getConfig } from "@/utils/template";
-import { authorize, createOrder, openChat } from "zmp-sdk/apis";
+import {
+  authorize,
+  createOrder,
+  openChat,
+  events,
+  EventName,
+  CheckoutSDK,
+} from "zmp-sdk/apis";
 import { useAtomCallback } from "jotai/utils";
 import { requestWithPost } from "./utils/request";
 
@@ -171,14 +178,42 @@ export function useCheckout() {
         miniAppId: window.APP_ID,
       });
 
-      setCart([]);
-      refreshNewOrders();
-      navigate("/orders", {
-        viewTransition: true,
-      });
-      toast.success("Thanh toán thành công. Cảm ơn bạn đã mua hàng!", {
-        icon: "🎉",
-        duration: 5000,
+      // 5. Thông báo kết quả giao dịch
+      events.once(EventName.PaymentDone, async (data) => {
+        const result = await CheckoutSDK.checkTransaction({ data });
+
+        if (result.resultCode >= 0) {
+          setCart([]);
+          refreshNewOrders();
+          navigate("/orders", {
+            viewTransition: true,
+          });
+        }
+
+        switch (result.resultCode) {
+          case 1:
+            toast.success("Thanh toán thành công. Cảm ơn bạn đã mua hàng!", {
+              icon: "🎉",
+              duration: 5000,
+            });
+            break;
+          case 0:
+            toast("Giao dịch đang xử lý. Cảm ơn bạn đã mua hàng!", {
+              icon: "⏳",
+              duration: 5000,
+            });
+            break;
+          case -1:
+            toast.error("Giao dịch không thành công. Vui lòng thử lại sau.");
+            break;
+          case -2:
+            toast.error("Vui lòng chọn phương thức thanh toán!");
+            break;
+          default:
+            // Giao dịch không hợp lệ, kiểm tra `result.err` & `result.msg` để biết thêm thông tin
+            console.error(result);
+            toast.error(result.msg);
+        }
       });
     } catch (error) {
       console.warn(error);
