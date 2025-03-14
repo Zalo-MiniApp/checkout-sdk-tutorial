@@ -75,3 +75,13 @@ export interface Order {
   total: number;
   note: string;
 }
+
+interface CreateOrderRequest {
+  zaloUserId: string;
+  items: CartItem[];
+  total: number;
+}
+
+interface CreateOrderReponse {
+  orderId: string;
+}

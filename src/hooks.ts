@@ -8,10 +8,11 @@ import {
   userInfoKeyState,
   userInfoState,
 } from "@/state";
-import { Product } from "@/types";
+import { CreateOrderReponse, CreateOrderRequest, Product } from "@/types";
 import { getConfig } from "@/utils/template";
 import { authorize, createOrder, openChat } from "zmp-sdk";
 import { useAtomCallback } from "jotai/utils";
+import { requestWithPost } from "./utils/request";
 
 export function useRealHeight(
   element: MutableRefObject<HTMLDivElement | null>,
@@ -109,6 +110,7 @@ export function useToBeImplemented() {
 }
 
 export function useCheckout() {
+  const userInfo = useAtomValue(userInfoState);
   const requestInfo = useRequestInformation();
   const { totalAmount } = useAtomValue(cartTotalState);
   const [cart, setCart] = useAtom(cartState);
@@ -117,16 +119,16 @@ export function useCheckout() {
   return async () => {
     try {
       await requestInfo();
-      await createOrder({
-        amount: totalAmount,
-        desc: "Thanh toán đơn hàng",
-        item: cart.map((item) => ({
-          id: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity,
-        })),
+      // 1. Tạo đơn hàng ở phía hệ thống của bạn
+      const { orderId: myOrderId } = await requestWithPost<
+        CreateOrderRequest,
+        CreateOrderReponse
+      >("/orders", {
+        zaloUserId: userInfo.id,
+        items: cart,
+        total: totalAmount,
       });
+
       setCart([]);
       navigate("/orders", {
         viewTransition: true,
